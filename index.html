@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Background Removal Tool</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .canvas-container {
+        display: flex;
+        gap: 20px;
+        margin: 20px 0;
+        flex-wrap: wrap;
+      }
+      .canvas-wrapper {
+        flex: 1;
+        min-width: 300px;
+      }
+      canvas {
+        border: 2px dashed #ddd;
+        border-radius: 8px;
+        max-width: 100%;
+        background: repeating-conic-gradient(#f0f0f0 0% 25%, white 0% 50%) 50% /
+          20px 20px;
+      }
+      .controls {
+        margin: 20px 0;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        background: #007bff;
+        color: white;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+      input[type="range"] {
+        width: 150px;
+      }
+      input[type="color"] {
+        width: 40px;
+        height: 30px;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+        cursor: pointer;
+      }
+      input[type="checkbox"] {
+        margin-right: 5px;
+      }
+      .tolerance-control {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      h2 {
+        color: #333;
+        margin-bottom: 10px;
+      }
+      .instructions {
+        background: #e7f3ff;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        border-left: 4px solid #007bff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>背景去除工具</h1>
+
+      <div class="instructions">
+        <strong>使用說明：</strong>
+        <ol>
+          <li>點擊「上傳圖片」選擇您的圖片</li>
+          <li>調整容差值來控制背景去除的精確度</li>
+          <li>調整邊緣平滑來減少銳利邊緣</li>
+          <li>調整邊緣羽化來消除灰色外框</li>
+          <li>如需替換顏色，勾選「替換顏色」並選擇來源和目標顏色</li>
+          <li>點擊背景區域來去除背景</li>
+          <li>點擊「下載結果」保存透明背景的PNG圖片</li>
+        </ol>
+      </div>
+
+      <div class="controls">
+        <input type="file" id="fileInput" accept="image/*" />
+        <div class="tolerance-control">
+          <label>容差: </label>
+          <input type="range" id="tolerance" min="0" max="100" value="30" />
+          <span id="toleranceValue">30</span>
+        </div>
+        <div class="tolerance-control">
+          <label>邊緣平滑: </label>
+          <input type="range" id="smoothing" min="0" max="10" value="3" />
+          <span id="smoothingValue">3</span>
+        </div>
+        <div class="tolerance-control">
+          <label>邊緣羽化: </label>
+          <input type="range" id="feather" min="0" max="5" value="1" />
+          <span id="featherValue">1</span>
+        </div>
+        <div class="tolerance-control">
+          <input type="checkbox" id="replaceColor" />
+          <label for="replaceColor">替換顏色</label>
+          <input type="color" id="fromColor" value="#000000" title="來源顏色" />
+          <span>→</span>
+          <input type="color" id="toColor" value="#ffffff" title="目標顏色" />
+          <input
+            type="range"
+            id="colorTolerance"
+            min="0"
+            max="100"
+            value="20"
+            title="顏色容差"
+          />
+          <span id="colorToleranceValue">20</span>
+        </div>
+        <button id="resetBtn" disabled>重置</button>
+        <button id="downloadBtn" disabled>下載結果</button>
+      </div>
+
+      <div class="canvas-container">
+        <div class="canvas-wrapper">
+          <h2>原圖</h2>
+          <canvas id="originalCanvas"></canvas>
+        </div>
+        <div class="canvas-wrapper">
+          <h2>處理結果</h2>
+          <canvas id="resultCanvas"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const fileInput = document.getElementById("fileInput");
+      const originalCanvas = document.getElementById("originalCanvas");
+      const resultCanvas = document.getElementById("resultCanvas");
+      const toleranceSlider = document.getElementById("tolerance");
+      const toleranceValue = document.getElementById("toleranceValue");
+      const smoothingSlider = document.getElementById("smoothing");
+      const smoothingValue = document.getElementById("smoothingValue");
+      const featherSlider = document.getElementById("feather");
+      const featherValue = document.getElementById("featherValue");
+      const replaceColorCheckbox = document.getElementById("replaceColor");
+      const fromColorPicker = document.getElementById("fromColor");
+      const toColorPicker = document.getElementById("toColor");
+      const colorToleranceSlider = document.getElementById("colorTolerance");
+      const colorToleranceValue = document.getElementById(
+        "colorToleranceValue"
+      );
+      const resetBtn = document.getElementById("resetBtn");
+      const downloadBtn = document.getElementById("downloadBtn");
+
+      const originalCtx = originalCanvas.getContext("2d");
+      const resultCtx = resultCanvas.getContext("2d");
+
+      let originalImageData = null;
+      let currentImage = null;
+
+      // Update slider value displays
+      toleranceSlider.addEventListener("input", () => {
+        toleranceValue.textContent = toleranceSlider.value;
+      });
+
+      smoothingSlider.addEventListener("input", () => {
+        smoothingValue.textContent = smoothingSlider.value;
+      });
+
+      featherSlider.addEventListener("input", () => {
+        featherValue.textContent = featherSlider.value;
+      });
+
+      colorToleranceSlider.addEventListener("input", () => {
+        colorToleranceValue.textContent = colorToleranceSlider.value;
+      });
+
+      // File input handler
+      fileInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+              loadImage(img);
+            };
+            img.src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      function loadImage(img) {
+        currentImage = img;
+
+        // Set canvas size
+        const maxWidth = 350;
+        const maxHeight = 350;
+        let { width, height } = img;
+
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          width *= ratio;
+          height *= ratio;
+        }
+
+        originalCanvas.width = resultCanvas.width = width;
+        originalCanvas.height = resultCanvas.height = height;
+
+        // Draw original image
+        originalCtx.drawImage(img, 0, 0, width, height);
+        resultCtx.drawImage(img, 0, 0, width, height);
+
+        // Store original image data
+        originalImageData = originalCtx.getImageData(0, 0, width, height);
+
+        resetBtn.disabled = false;
+        downloadBtn.disabled = false;
+      }
+
+      // Click to remove background
+      originalCanvas.addEventListener("click", (e) => {
+        if (!originalImageData) return;
+
+        const rect = originalCanvas.getBoundingClientRect();
+        const x = Math.floor(
+          ((e.clientX - rect.left) * originalCanvas.width) / rect.width
+        );
+        const y = Math.floor(
+          ((e.clientY - rect.top) * originalCanvas.height) / rect.height
+        );
+
+        removeBackground(x, y);
+      });
+
+      function removeBackground(clickX, clickY) {
+        const imageData = originalCtx.getImageData(
+          0,
+          0,
+          originalCanvas.width,
+          originalCanvas.height
+        );
+        const data = imageData.data;
+        const tolerance = parseInt(toleranceSlider.value);
+        const smoothing = parseInt(smoothingSlider.value);
+        const feather = parseInt(featherSlider.value);
+
+        // Get the color of the clicked pixel
+        const index = (clickY * originalCanvas.width + clickX) * 4;
+        const targetR = data[index];
+        const targetG = data[index + 1];
+        const targetB = data[index + 2];
+
+        // Create mask for background removal
+        const mask = new Uint8Array(
+          originalCanvas.width * originalCanvas.height
+        );
+        const visited = new Set();
+        const stack = [[clickX, clickY]];
+
+        // Flood fill to create mask
+        while (stack.length > 0) {
+          const [x, y] = stack.pop();
+          const key = `${x},${y}`;
+
+          if (
+            visited.has(key) ||
+            x < 0 ||
+            x >= originalCanvas.width ||
+            y < 0 ||
+            y >= originalCanvas.height
+          ) {
+            continue;
+          }
+
+          const pixelIndex = (y * originalCanvas.width + x) * 4;
+          const r = data[pixelIndex];
+          const g = data[pixelIndex + 1];
+          const b = data[pixelIndex + 2];
+
+          // Enhanced color matching with LAB-like distance
+          const colorDiff = Math.sqrt(
+            Math.pow(r - targetR, 2) * 0.3 +
+              Math.pow(g - targetG, 2) * 0.59 +
+              Math.pow(b - targetB, 2) * 0.11
+          );
+
+          if (colorDiff <= tolerance * 2.5) {
+            visited.add(key);
+            mask[y * originalCanvas.width + x] = 1;
+
+            // Add neighboring pixels to stack
+            stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+          }
+        }
+
+        // Apply smoothing to mask
+        if (smoothing > 0) {
+          applySmoothingToMask(
+            mask,
+            originalCanvas.width,
+            originalCanvas.height,
+            smoothing
+          );
+        }
+
+        // Create result image data with improved alpha blending
+        const resultImageData = originalCtx.createImageData(
+          originalCanvas.width,
+          originalCanvas.height
+        );
+        const resultData = resultImageData.data;
+
+        // Copy original data and apply mask with feathering
+        for (let y = 0; y < originalCanvas.height; y++) {
+          for (let x = 0; x < originalCanvas.width; x++) {
+            const i = (y * originalCanvas.width + x) * 4;
+            const maskIndex = y * originalCanvas.width + x;
+
+            resultData[i] = data[i]; // R
+            resultData[i + 1] = data[i + 1]; // G
+            resultData[i + 2] = data[i + 2]; // B
+
+            if (mask[maskIndex]) {
+              // Apply feathering for smooth edges
+              if (feather > 0) {
+                const edgeDistance = getEdgeDistance(
+                  mask,
+                  x,
+                  y,
+                  originalCanvas.width,
+                  originalCanvas.height,
+                  feather
+                );
+                const alpha = Math.max(0, 1 - edgeDistance / feather);
+                resultData[i + 3] = data[i + 3] * alpha;
+              } else {
+                resultData[i + 3] = 0; // Fully transparent
+              }
+            } else {
+              resultData[i + 3] = data[i + 3]; // Keep original alpha
+            }
+          }
+        }
+
+        // Apply color replacement if enabled
+        if (replaceColorCheckbox.checked) {
+          applyColorReplacement(
+            resultData,
+            originalCanvas.width,
+            originalCanvas.height
+          );
+        }
+
+        // Draw result
+        resultCtx.putImageData(resultImageData, 0, 0);
+      }
+
+      function applyColorReplacement(data, width, height) {
+        const fromColor = hexToRgb(fromColorPicker.value);
+        const toColor = hexToRgb(toColorPicker.value);
+        const tolerance = parseInt(colorToleranceSlider.value);
+
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i + 3] === 0) continue; // Skip transparent pixels
+
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+
+          // Check if pixel color matches the target color to replace
+          const colorDiff = Math.sqrt(
+            Math.pow(r - fromColor.r, 2) * 0.3 +
+              Math.pow(g - fromColor.g, 2) * 0.59 +
+              Math.pow(b - fromColor.b, 2) * 0.11
+          );
+
+          if (colorDiff <= tolerance * 2.5) {
+            // Replace with new color
+            data[i] = toColor.r;
+            data[i + 1] = toColor.g;
+            data[i + 2] = toColor.b;
+          }
+        }
+      }
+
+      function hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result
+          ? {
+              r: parseInt(result[1], 16),
+              g: parseInt(result[2], 16),
+              b: parseInt(result[3], 16),
+            }
+          : null;
+      }
+
+      function applySmoothingToMask(mask, width, height, iterations) {
+        for (let iter = 0; iter < iterations; iter++) {
+          const newMask = new Uint8Array(mask);
+
+          for (let y = 1; y < height - 1; y++) {
+            for (let x = 1; x < width - 1; x++) {
+              const index = y * width + x;
+              let sum = 0;
+              let count = 0;
+
+              // 3x3 kernel
+              for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                  const ni = (y + dy) * width + (x + dx);
+                  sum += mask[ni];
+                  count++;
+                }
+              }
+
+              newMask[index] = sum / count > 0.5 ? 1 : 0;
+            }
+          }
+
+          mask.set(newMask);
+        }
+      }
+
+      function getEdgeDistance(mask, x, y, width, height, maxDistance) {
+        const maskIndex = y * width + x;
+        if (!mask[maskIndex]) return maxDistance; // Not in mask
+
+        let minDistance = maxDistance;
+
+        for (let dy = -maxDistance; dy <= maxDistance; dy++) {
+          for (let dx = -maxDistance; dx <= maxDistance; dx++) {
+            const nx = x + dx;
+            const ny = y + dy;
+
+            if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+              const nIndex = ny * width + nx;
+              if (!mask[nIndex]) {
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                minDistance = Math.min(minDistance, distance);
+              }
+            }
+          }
+        }
+
+        return minDistance;
+      }
+
+      // Reset button
+      resetBtn.addEventListener("click", () => {
+        if (currentImage) {
+          resultCtx.drawImage(
+            currentImage,
+            0,
+            0,
+            resultCanvas.width,
+            resultCanvas.height
+          );
+
+          // Apply color replacement if enabled on reset
+          if (replaceColorCheckbox.checked) {
+            const imageData = resultCtx.getImageData(
+              0,
+              0,
+              resultCanvas.width,
+              resultCanvas.height
+            );
+            applyColorReplacement(
+              imageData.data,
+              resultCanvas.width,
+              resultCanvas.height
+            );
+            resultCtx.putImageData(imageData, 0, 0);
+          }
+        }
+      });
+
+      // Download button
+      downloadBtn.addEventListener("click", () => {
+        const link = document.createElement("a");
+        link.download = "removed-background.png";
+        link.href = resultCanvas.toDataURL("image/png");
+        link.click();
+      });
+
+      // Auto-load the uploaded image if available
+      window.addEventListener("load", () => {
+        // You can modify this section to auto-process your specific image
+        // For now, it waits for user to upload an image
+      });
+    </script>
+  </body>
+</html>
