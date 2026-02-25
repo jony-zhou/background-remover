@@ -1,0 +1,41 @@
+{
+  "name": "background-remover",
+  "version": "1.0.0",
+  "description": "一個強大且易用的基於瀏覽器的背景去除工具",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx http-server -p 8000 -c-1 --cors",
+    "dev": "npx http-server -p 8000 -c-1 --cors -o",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/background-remover.git"
+  },
+  "keywords": [
+    "background-removal",
+    "image-processing",
+    "canvas",
+    "transparent-background",
+    "javascript",
+    "html5",
+    "css3",
+    "web-app",
+    "圖像處理",
+    "背景去除"
+  ],
+  "author": "Background Remover Team",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/your-username/background-remover/issues"
+  },
+  "homepage": "https://github.com/your-username/background-remover#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "browserslist": [
+    "last 2 versions",
+    "> 1%",
+    "not dead"
+  ]
+}

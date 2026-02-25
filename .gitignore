@@ -1,0 +1,197 @@
+# ==================== 操作系統 ====================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ==================== 編輯器和 IDE ====================
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+.history/
+*.vsix
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# Vim
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+Session.vim
+Sessionx.vim
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# ==================== Node.js / npm ====================
+
+# 依賴目錄
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# 運行時數據
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# 測試覆蓋率
+lib-cov
+coverage
+*.lcov
+.nyc_output
+
+# 構建輸出
+dist/
+build/
+*.tsbuildinfo
+
+# 緩存
+.npm
+.eslintcache
+.stylelintcache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# ==================== 備份和臨時文件 ====================
+
+# 備份文件
+*.bak
+*.backup
+*.old
+*.orig
+*.swp
+*.swo
+*~
+
+# 臨時文件
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# 日誌文件
+*.log
+logs/
+*.log.*
+
+# ==================== 測試和構建 ====================
+
+# 測試文件
+test-results/
+coverage/
+*.test.js.snap
+
+# 構建產物
+dist-ssr/
+*.local
+
+# ==================== 環境變量和配置 ====================
+
+# 環境變量文件
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 敏感配置
+*.key
+*.pem
+*.p12
+secrets.json
+
+# ==================== 項目特定 ====================
+
+# 上傳的圖片（測試用）
+/uploads/
+/test-images/
+
+# 生成的文件
+/output/
+/exports/
+
+# 文檔生成
+/docs/generated/
+
+# ==================== 壓縮文件 ====================
+
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# ==================== 其他 ====================
+
+# 鎖定文件（根據需要可以取消註釋）
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
